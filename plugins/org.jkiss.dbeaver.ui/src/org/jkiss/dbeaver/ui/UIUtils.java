@@ -67,6 +67,8 @@ import org.jkiss.dbeaver.runtime.DummyRunnableContext;
 import org.jkiss.dbeaver.runtime.RunnableContextDelegate;
 import org.jkiss.dbeaver.ui.controls.CustomSashForm;
 import org.jkiss.dbeaver.ui.dialogs.EditTextDialog;
+import org.jkiss.dbeaver.ui.dialogs.MessageBoxBuilder;
+import org.jkiss.dbeaver.ui.dialogs.Reply;
 import org.jkiss.dbeaver.ui.internal.UIActivator;
 import org.jkiss.dbeaver.ui.internal.UIMessages;
 import org.jkiss.dbeaver.utils.GeneralUtils;
@@ -441,29 +443,30 @@ public class UIUtils {
         syncExec(runnable);
     }
 
-    public static boolean confirmAction(final String title, final String question)
-    {
+    public static boolean confirmAction(final String title, final String question) {
         return confirmAction(null, title, question);
     }
 
-    public static boolean confirmAction(final Shell shell, final String title, final String question)
-    {
-        return confirmAction(shell, title, question, SWT.ICON_QUESTION);
+    public static boolean confirmAction(@Nullable Shell shell, final String title, final String question) {
+        return showModernMessageBoxConfirmation(shell, title, question, DBIcon.STATUS_WARNING); //TODO change to question icon
     }
 
-    public static boolean confirmAction(final Shell shell, final String title, final String question, int iconType)
-    {
-        return new UIConfirmation() {
-            @Override
-            public Boolean runTask() {
-                Shell activeShell = shell != null ? shell : getActiveWorkbenchShell();
-                MessageBox messageBox = new MessageBox(activeShell, iconType | SWT.YES | SWT.NO);
-                messageBox.setMessage(question);
-                messageBox.setText(title);
-                int response = messageBox.open();
-                return (response == SWT.YES);
-            }
-        }.confirm();
+    public static boolean confirmAction(final Shell shell, final String title, final String question, int iconType) {
+        return confirmAction(shell, title, question);
+    }
+
+    private static boolean showModernMessageBoxConfirmation(@Nullable Shell shell, String title, String message, DBPImage image) {
+        if (shell == null) {
+            shell = getActiveWorkbenchShell();
+        }
+        Reply reply = new MessageBoxBuilder(shell)
+            .setTitle(title)
+            .setMessage(message)
+            .setReplies(Reply.YES, Reply.NO)
+            .setDefaultReply(Reply.NO)
+            .setPrimaryImage(image)
+            .show();
+        return reply == Reply.YES;
     }
 
     public static int getFontHeight(Control control) {
@@ -1633,6 +1636,7 @@ public class UIUtils {
         return null;
     }
 
+    @Nullable
     public static Shell getActiveWorkbenchShell() {
         IWorkbench workbench = PlatformUI.getWorkbench();
         IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
